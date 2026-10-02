@@ -1,10 +1,13 @@
 import express from "express";
-import fetch from "node-fetch";
 import "dotenv/config";
 import cors from "cors";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = Number.parseInt(process.env.PORT || "3000", 10) || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -15,7 +18,7 @@ const GUILD_ID = process.env.GUILD_ID;
 const DISCORD_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
 // ===== КЭШ =====
-const CACHE_TTL_MS = 60_000; // 60 сек
+const CACHE_TTL_MS = Number.parseInt(process.env.CACHE_TTL_MS || "60000", 10) || 60_000;
 let cachedEvents = null;
 let cachedAt = 0;
 
@@ -384,6 +387,16 @@ async function fetchDiscordEvents({ ignoreCache = false } = {}) {
     }
   );
 
+  if (res.status === 401 || res.status === 403) {
+    const body = await res.text().catch(() => "");
+    console.error(
+      `Discord API ${res.status}: bot token rejected. ` +
+        `Check DISCORD_BOT_TOKEN in .env (Bot -> Reset Token -> copy) ` +
+        `and make sure the bot is a member of guild ${GUILD_ID}. Body: ${body}`
+    );
+    throw new Error("Discord rejected the bot token (401/403). Check DISCORD_BOT_TOKEN.");
+  }
+
   if (res.status === 429) {
     const data = await res.json().catch(() => ({}));
     console.warn("Discord API rate limited:", data);
@@ -417,12 +430,31 @@ async function fetchDiscordEvents({ ignoreCache = false } = {}) {
 }
 
 // ---------- API: список ивентов с фильтрами ----------
+const VALID_TYPES = new Set(["irl", "virtual", "radio", "other"]);
+const VALID_STATUSES = new Set(["live", "upcoming"]);
+
+app.get("/api/health", (req, res) => {
+  res.json({
+    ok: true,
+    mock: !GUILD_ID || !DISCORD_TOKEN,
+    cacheAgeMs: cachedEvents ? Date.now() - cachedAt : null,
+    uptimeSec: Math.round(process.uptime()),
+  });
+});
+
 app.get("/api/events", async (req, res) => {
   const filterType = (req.query.type || "").toLowerCase(); // irl / virtual / radio / other
   const filterStatus = (req.query.status || "").toLowerCase(); // live / upcoming / past
   const ignoreCache = req.query.force === "1";
   const sort = (req.query.sort || "start_asc").toLowerCase(); // start_asc | start_desc
   const limit = parseInt(req.query.limit, 10);
+
+  if (filterType && !VALID_TYPES.has(filterType)) {
+    return res.status(400).json({ error: "Invalid type. Use: irl, virtual, radio, other" });
+  }
+  if (filterStatus && !VALID_STATUSES.has(filterStatus)) {
+    return res.status(400).json({ error: "Invalid status. Use: live, upcoming" });
+  }
 
   try {
     let events = await fetchDiscordEvents({ ignoreCache });
@@ -551,8 +583,16 @@ app.post("/api/events/:id/interest", (req, res) => {
 });
 
 // ---------- Статика ----------
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
+
+// 404 для неизвестных API-роутов (фронт при этом всё равно отдаётся статикой)
+app.use("/api", (req, res) => {
+  res.status(404).json({ error: "Not found" });
+});
 
 app.listen(PORT, () => {
   console.log(`Events API running at http://localhost:${PORT}`);
+  if (!GUILD_ID || !DISCORD_TOKEN) {
+    console.warn("GUILD_ID / DISCORD_BOT_TOKEN not set — serving mock events. See .env.example");
+  }
 });
