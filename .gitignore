@@ -1,0 +1,19 @@
+# deps
+node_modules/
+npm-debug.log*
+
+# env / secrets — NEVER commit real tokens
+.env
+.env.local
+.env.*.local
+
+# editor / OS junk
+.hist/
+.vscode/
+.idea/
+*.log
+.DS_Store
+Thumbs.db
+
+# runtime
+*.pid
