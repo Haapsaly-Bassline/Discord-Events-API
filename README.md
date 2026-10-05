@@ -62,16 +62,6 @@ Bot needs access to the guild's Scheduled Events.
 
 ## Screenshots
 
-Empty list (web):
-
-![empty](https://github.com/user-attachments/assets/5c88d815-d213-4eb1-a40d-b30b4c77c036)
-
-Events list (web):
-
-![events](https://github.com/user-attachments/assets/62941dd8-1256-4265-b9bd-d9986e64a8f5)
-![events](https://github.com/user-attachments/assets/d91dfe7e-1389-4b9c-a51a-43fa48e54a4c)
-![events](https://github.com/user-attachments/assets/c122140f-171e-4f8f-974b-376938e7afbf)
-
 Events API:
 
 ![api](https://github.com/user-attachments/assets/297872ee-e4b4-4a0e-bfde-8a4b45572ee8)
