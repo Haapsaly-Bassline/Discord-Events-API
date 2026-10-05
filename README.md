@@ -74,7 +74,8 @@ Events list (web):
 
 Events API:
 
-![api](https://github.com/user-attachments/assets/a907d02e-6b25-4a6f-9f88-9ab0a7b82e14)
+![api](https://github.com/user-attachments/assets/297872ee-e4b4-4a0e-bfde-8a4b45572ee8)
+
 
 ## License
 
